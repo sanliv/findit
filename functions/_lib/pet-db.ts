@@ -69,8 +69,9 @@ let initialized = false;
 
 export async function ensurePetTables(db?: D1DatabaseLike) {
   if (!db || initialized) return;
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS lost_pets (
+
+  const statements = [
+    `CREATE TABLE IF NOT EXISTS lost_pets (
       id TEXT PRIMARY KEY,
       name TEXT,
       species TEXT,
@@ -92,9 +93,9 @@ export async function ensurePetTables(db?: D1DatabaseLike) {
       status TEXT DEFAULT 'searching',
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
+    )`,
 
-    CREATE TABLE IF NOT EXISTS found_pets (
+    `CREATE TABLE IF NOT EXISTS found_pets (
       id TEXT PRIMARY KEY,
       species TEXT,
       breed TEXT,
@@ -114,22 +115,30 @@ export async function ensurePetTables(db?: D1DatabaseLike) {
       status TEXT DEFAULT 'found',
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
+    )`,
 
-    CREATE TABLE IF NOT EXISTS matches (
+    `CREATE TABLE IF NOT EXISTS matches (
       id TEXT PRIMARY KEY,
       lost_pet_id TEXT,
       found_pet_id TEXT,
       score INTEGER,
       reasons TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
+    )`,
 
-    CREATE INDEX IF NOT EXISTS idx_lost_pets_created_at ON lost_pets(created_at);
-    CREATE INDEX IF NOT EXISTS idx_found_pets_created_at ON found_pets(created_at);
-    CREATE INDEX IF NOT EXISTS idx_matches_lost_pet_id ON matches(lost_pet_id);
-    CREATE INDEX IF NOT EXISTS idx_matches_found_pet_id ON matches(found_pet_id);
-  `);
+    `CREATE INDEX IF NOT EXISTS idx_lost_pets_created_at ON lost_pets(created_at)`,
+
+    `CREATE INDEX IF NOT EXISTS idx_found_pets_created_at ON found_pets(created_at)`,
+
+    `CREATE INDEX IF NOT EXISTS idx_matches_lost_pet_id ON matches(lost_pet_id)`,
+
+    `CREATE INDEX IF NOT EXISTS idx_matches_found_pet_id ON matches(found_pet_id)`
+  ];
+
+  for (const sql of statements) {
+    await db.prepare(sql).run();
+  }
+
   initialized = true;
 }
 
